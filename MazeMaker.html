@@ -1,0 +1,159 @@
+<html><head>
+    <head>
+        <meta charset="utf-8">
+        <title>Maze maker</title>
+<style type="text/css">
+table { border-collapse: collapse }
+td { width: 3em; height: 3em; border: 1px solid; text-align: center }
+th { display: none; }
+td.b {background: blue;}
+</style>
+<script type="application/javascript">
+Node.prototype.add = function(tag, cnt, txt) {
+	for (var i = 0; i < cnt; i++)
+		this.appendChild(ce(tag, txt));
+}
+Node.prototype.ins = function(tag) {
+	this.insertBefore(ce(tag), this.firstChild)
+}
+Node.prototype.kid = function(i) { return this.childNodes[i] }
+Node.prototype.cls = function(t) { this.className += ' ' + t }
+ 
+NodeList.prototype.map = function(g) {
+	for (var i = 0; i < this.length; i++) g(this[i]);
+}
+ 
+function ce(tag, txt) {
+	var x = document.createElement(tag);
+	if (txt !== undefined) x.innerHTML = txt;
+	return x
+}
+ 
+function gid(e) { return document.getElementById(e) }
+function irand(x) { return Math.floor(Math.random() * x) }
+function setSum(s,operator) {
+    var x = irand(s);
+    var text = x + operator + (s-x);
+    return text}
+ 
+function make_maze() {
+	var w = Math.floor((parseInt(gid('rows').value)+1)/2);
+	var tbl = gid('maze');
+	tbl.innerHTML = '';
+	tbl.add('tr', 2*w-1);
+	tbl.childNodes.map(function(x) {
+			x.add('th', 2);
+			x.add('td', 2*w-1, '*');
+			x.add('th', 2)});
+	tbl.ins('tr');
+	tbl.firstChild.add('th', 2*w + 3);
+    tbl.ins('tr');
+	tbl.firstChild.add('th', 2*w + 3);
+    tbl.add('tr', 1);
+	tbl.lastChild.add('th', 2*w + 3);
+    tbl.add('tr', 1);
+	tbl.lastChild.add('th', 2*w + 3);
+	for (var i = 2; i <= w*2; i++) {
+		for (var j = 2; j <= w*2; j++) {
+			tbl.kid(i).kid(j).neighbors = [
+				tbl.kid(i + 2).kid(j),
+				tbl.kid(i).kid(j + 2),
+				tbl.kid(i).kid(j - 2),
+				tbl.kid(i - 2).kid(j)
+			];
+            tbl.kid(i).kid(j).borders = [
+				tbl.kid(i + 1).kid(j),
+				tbl.kid(i).kid(j + 1),
+				tbl.kid(i).kid(j - 1),
+				tbl.kid(i - 1).kid(j)
+			];
+		}
+	}
+    tbl.kid(2).kid(2).style.backgroundColor = 'lightgray';
+    tbl.kid(2*w).kid(2*w).style.backgroundColor = 'lightgray'
+	walk(tbl.kid((irand(w)+1)*2).kid((irand(w)+1)*2));
+    way(w);
+    var sum = parseInt(gid('sum').value);
+    for (var i = 2; i <= w*2; i++) {
+		for (var j = 2; j <= w*2; j++) {
+            if (tbl.kid(i).kid(j).className.match('v'))         
+                tbl.kid(i).kid(j).innerHTML = setSum(sum,'+')
+                else  tbl.kid(i).kid(j).innerHTML = setSum(sum-irand(10),'+');
+        }
+    }
+    gid('solve').style.display='inline';
+}
+
+function solve() {
+	var w = Math.floor((parseInt(gid('rows').value)+1)/2);
+	var tbl = gid('maze');
+    for (var i = 2; i <= w*2; i++) {
+		for (var j = 2; j <= w*2; j++) {
+            if (tbl.kid(i).kid(j).className.match('v'))         
+                tbl.kid(i).kid(j).style.backgroundColor = 'lightgray';
+        }
+    }
+}
+ 
+function shuffle(x) {
+	for (var i = 3; i > 0; i--) {
+		j = irand(i + 1);
+		if (j == i) continue;
+		var t = x[j]; x[j] = x[i]; x[i] = t;
+	}
+	return x;
+}
+ 
+var dirs = ['s', 'e', 'w', 'n'];
+function walk(c) {
+	c.innerHTML = '';
+	var idx = shuffle([0, 1, 2, 3]);
+	for (var j = 0; j < 4; j++) {
+		var i = idx[j];
+		var x = c.neighbors[i];
+		if (x.textContent != '*') continue;
+		c.cls('w'); 
+        var y = c.borders[i];
+        y.innerHTML = '';
+        y.cls('w');
+        x.cls('w');
+		walk(x);
+	}
+}
+ 
+function way(w, c, t) {
+	if (c === undefined) {
+		c = gid('maze').kid(2).kid(2);
+		c.cls('v');
+	}
+	if (t === undefined)
+		t = gid('maze')	.kid(w*2).kid(w*2);
+ 
+	if (c === t) return 1;
+	c.vis = 1;
+	for (var i = 0; i < 4; i++) {
+		var x = c.neighbors[i];
+        var y = c.borders[i];
+		if (x.tagName.toLowerCase() == 'th') continue;
+		if (x.vis || !y.className.match('w') || !way(w, x, t))
+			continue;
+ 
+		x.cls('v');
+        y.cls('v');
+		return 1;
+	}
+	c.vis = null;
+	return 0;
+}
+ 
+</script></head>
+<body><form><fieldset>
+<label>Размер </label><input id='rows' size="3"/>
+<label>Сумма </label><input id='sum' size="3"/>
+<input type="radio" name="r" value=l checked>Без тупиков  
+<input type="radio" name="r" value=2>С тупиками 
+<input type="button" onclick="make_maze()" value="Создать"/>
+<a id='solve' style='display:none' href='javascript:solve(); void(0)'>Решить</a>
+
+
+</fieldset></form><table id='maze'/></body></html>
